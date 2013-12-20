@@ -7,6 +7,7 @@
 setwd("~/SERDPproject/Seedbank/Seedbank")
 AllData=read.csv("Seedbank.csv", header=T)
 Seedbank=AllData[,1:16]
+
 #What are the Summary Statistics? ------
 # SpeRichDesert 
 # Seedbank
@@ -16,7 +17,29 @@ Seedbank=AllData[,1:16]
 # NatDens       
 # InvDens       
 # InvDenPct  
- 
+#----------
+CensusData=read.csv("Census_Winter.csv", header=T)
+Census=CensusData[,1:32]
+
+#What are the Summary Statistics? ------
+
+# "TotCov" 
+# "VegHeight" 
+# "EstBiomass" 
+# "NatCover"  
+# "InvCover"  
+# "EroCover" 
+# "SchCover"  
+# "BroCover"  
+# "BraCover" 
+# "Crust"   
+# "CryCrust" 
+# "SpecRich"  
+# "TotDens" 
+# "NatDens" 
+# "InvDens"  
+# "InvDensPct" 
+
 
 # Seedbank Plots -----------
 
@@ -46,29 +69,6 @@ for (i in unique(thisSeedbank$"ShrubID")) {  # i=ShrubNumber
 } # end of i loop
 legend(1,0.95*yplotmax, levels(thisSeedbank$TranDir), col=dircols, lwd=2, lty=1, bty="n")      #IF a 2012 Census.Train
 
-
-
-CensusData=read.csv("Census_Winter.csv", header=T)
-
-Census=CensusData[,1:32]
-#What are the Summary Statistics? ------
-
-# "TotCov" 
-# "VegHeight" 
-# "EstBiomass" 
-# "NatCover"  
-# "InvCover"  
-# "EroCover" 
-# "SchCover"  
-# "BroCover"  
-# "BraCover" 
-# "Crust"   
-# "CryCrust" 
-# "SpecRich"  
-# "TotDens" 
-# "NatDens" 
-# "InvDens"  
-# "InvDensPct" 
 
 
 #Plot things -----------
@@ -136,9 +136,11 @@ Census.summary=subset(Census.summ, (RainTrt!="D")&(SeedTrt!="S") )
 
 DESERT=="Sonoran"
 YEAR="2012"
-TRANDIR="N"
+TRANDIR="S"
+dircol="red"
 FIRETRT="UB"
 RAINTRT="E"
+
 TURBTRT="N"
 
 sub.Census=subset(Census.summary,(Desert==DESERT)&(Year==YEAR)&(FireTrt==FIRETRT)&(TranDir==TRANDIR)&
@@ -147,11 +149,52 @@ sub.Seedbank=subset(Seedbank.summary,(Desert==DESERT)&(Year==YEAR)&(TranDir==TRA
 xrange=range(c(sub.Seedbank$InvDens.mean+sub.Seedbank$InvDens.stderr, sub.Seedbank$InvDens.mean-sub.Seedbank$InvDens.stderr))
 yrange=range(c(sub.Census$InvDens.mean+sub.Census$InvDens.stderr,sub.Census$InvDens.mean+sub.Census$InvDens.stderr))
 
-plot(sub.Seedbank$InvDens.mean, sub.Census$InvDens.mean, xlab="Seedbank Density", ylab="Census Density", xlim=xrange, ylim=yrange)
-arrows(sub.Seedbank$InvDens.mean, sub.Census$InvDens.mean,  sub.Seedbank$InvDens.mean+sub.Seedbank$InvDens.stderr, sub.Census$InvDens.mean, angle=90, length=0.05)
-arrows(sub.Seedbank$InvDens.mean, sub.Census$InvDens.mean,  sub.Seedbank$InvDens.mean-sub.Seedbank$InvDens.stderr, sub.Census$InvDens.mean, angle=90, length=0.05)
-arrows(sub.Seedbank$InvDens.mean, sub.Census$InvDens.mean,  sub.Seedbank$InvDens.mean, sub.Census$InvDens.mean+sub.Census$InvDens.stderr, angle=90, length=0.05)
-arrows(sub.Seedbank$InvDens.mean, sub.Census$InvDens.mean,  sub.Seedbank$InvDens.mean, sub.Census$InvDens.mean-sub.Census$InvDens.stderr, angle=90, length=0.05)
+plot(sub.Seedbank$InvDens.mean, sub.Census$InvDens.mean, xlab="Seedbank Density", ylab="Census Density", xlim=xrange, ylim=yrange, col=dircol)
+arrows(sub.Seedbank$InvDens.mean, sub.Census$InvDens.mean,  sub.Seedbank$InvDens.mean+sub.Seedbank$InvDens.stderr, sub.Census$InvDens.mean, angle=90, length=0.05, col=dircol)
+arrows(sub.Seedbank$InvDens.mean, sub.Census$InvDens.mean,  sub.Seedbank$InvDens.mean-sub.Seedbank$InvDens.stderr, sub.Census$InvDens.mean, angle=90, length=0.05, col=dircol)
+arrows(sub.Seedbank$InvDens.mean, sub.Census$InvDens.mean,  sub.Seedbank$InvDens.mean, sub.Census$InvDens.mean+sub.Census$InvDens.stderr, angle=90, length=0.05, col=dircol)
+arrows(sub.Seedbank$InvDens.mean, sub.Census$InvDens.mean,  sub.Seedbank$InvDens.mean, sub.Census$InvDens.mean-sub.Census$InvDens.stderr, angle=90, length=0.05, col=dircol)
+
+
+#Try plotting all on same graph---------
+#Invasive Density-------
+#Do north and South separately
+DESERT="Mojave"
+SeedYEAR="2011"
+CensusYEAR="2011"
+TRANDIR="S"
+
+sub.Census=subset(Census.summary,(Desert==DESERT)&(Year==CensusYEAR)&(TranDir==TRANDIR))
+sub.Seedbank=subset(Seedbank.summary,(Desert==DESERT)&(Year==SeedYEAR)&(TranDir==TRANDIR))
+xrange=range(c(sub.Seedbank$InvDens.mean+sub.Seedbank$InvDens.stderr, sub.Seedbank$InvDens.mean-sub.Seedbank$InvDens.stderr))
+yrange=range(c(sub.Census$InvDens.mean+sub.Census$InvDens.stderr,sub.Census$InvDens.mean+sub.Census$InvDens.stderr))
+windows(6,6)
+plot(0,0, xlab="Seed Bank Density", ylab="Census Density", xlim=xrange, ylim=yrange, pch=NA, 
+     main=c(paste(DESERT, " ", SeedYEAR, " Seedbank     ", CensusYEAR , " Census "), paste( TRANDIR, " InvDens") ))
+
+#expand.grid(Fire=c("B","UB"), Rain=c("A", "E"), Turb=c("Y","N"))
+
+FireTrtmnts=c("B", "UB"); RainTrtmnts=c("A", "E"); TurbTrtmnts=c("Y","N")
+for(FIRETRT in FireTrtmnts){
+    for(RAINTRT in RainTrtmnts){
+        for(TURBTRT in TurbTrtmnts){
+            sub.Cen=sub.Seed=NULL
+            if (FIRETRT=="B") thispch=16 else thispch=17
+            if (RAINTRT=="A") thiscol="brown" else thiscol="blue"
+            if (TURBTRT=="Y") thislty=1 else thislty=3
+            sub.Cen=subset(sub.Census,(FireTrt==FIRETRT)&(RainTrt==RAINTRT)&(TurbTrt==TURBTRT))
+            print(sub.Cen)
+            sub.Seed=sub.Seedbank
+            try(points(sub.Seed$InvDens.mean, sub.Cen$InvDens.mean, col=thiscol, pch=thispch))
+            try(arrows(sub.Seed$InvDens.mean, sub.Cen$InvDens.mean,  sub.Seed$InvDens.mean+sub.Seed$InvDens.stderr, sub.Cen$InvDens.mean, angle=90, length=0.05, col=thiscol, pch=thispch, lty=thislty))
+            try(arrows(sub.Seed$InvDens.mean, sub.Cen$InvDens.mean,  sub.Seed$InvDens.mean-sub.Seed$InvDens.stderr, sub.Cen$InvDens.mean, angle=90, length=0.05, col=thiscol, pch=thispch, lty=thislty))
+            try(arrows(sub.Seed$InvDens.mean, sub.Cen$InvDens.mean,  sub.Seed$InvDens.mean, sub.Cen$InvDens.mean+sub.Cen$InvDens.stderr, angle=90, length=0.05, col=thiscol, pch=thispch, lty=thislty))
+            try(arrows(sub.Seed$InvDens.mean, sub.Cen$InvDens.mean,  sub.Seed$InvDens.mean, sub.Cen$InvDens.mean-sub.Cen$InvDens.stderr, angle=90, length=0.05, col=thiscol, pch=thispch, lty=thislty))
+            #text(sub.Seed$InvDens.mean, sub.Cen$InvDens.mean, c(1,2,3,4), pos=2)
+}
+    }
+}
+
 
 
 
