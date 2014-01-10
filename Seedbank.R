@@ -236,13 +236,18 @@ for(FIRETRT in FireTrtmnts){
 
 
 
-
+library(lme4)
 
 #Try fitting mixed effects model to Census data (and Seedbank Data?), and for a given trt combo,
 # Come up with LSMEANS, for each ones- This will allow for using more data.
 # Then compare the seedbank value for these means. 
-# Treat seedbank as a covariate. Is covariate (seedbank) significant? 
+# Treat seedbank as a covariate. Is covariate (seedbank) significant?  Can't do this b/c don't have corresponding data to put into lines
 # 
+
+plot( NatDens ~ MH*Desert*Year, data= Seedbank[Seedbank$GermPush==1234,])
+plot( InvDens ~ MH*Desert*Year, data= Seedbank[Seedbank$GermPush==1234,])
+plot( TotDensAll ~ MH*Desert*Year, data= Seedbank[Seedbank$GermPush==1234,])
+
 Seedbank$Year=as.factor(Seedbank$Year)
 
 Seedbank.glme=glmer( NatDens~Year+MH+Desert+TranDir+ 
@@ -252,13 +257,18 @@ Seedbank.glme=glmer( NatDens~Year+MH+Desert+TranDir+
 
 summary(Seedbank.glme)
 
-lsmeans(Seedbank.mod, pairwise~  Year:MH )
-lsmeans(Seedbank.mod, pairwise~  Year:Desert )
-lsmeans(Seedbank.mod, pairwise~   Year:TranDir)
+library(lsmeans)
+
+Seedbank.means=lsmeans(Seedbank.glme,  ~  Year:MH:Desert )
+lsmeans(Seedbank.glme, pairwise~  Year:Desert )
+lsmeans(Seedbank.glme, pairwise~   Year:TranDir)
+
+logit=function(x){log(x/(1-x))}
+invlogit=function(a){exp(a)/(1+exp(a))}
+
+invlogit(means[[1]][,c(4,7,8)])
 
 
-Seedbank.mod=glmer( NatDens~Year*MH+Desert+ (1|ShrubID/Plot) , family=poisson, data=Seedbank[Seedbank$GermPush==1234,])
-summary(Seedbank.mod)
 
-lsmeans(Seedbank.mod, pairwise~Year*MH)
-lsmeans(Seedbank.mod, pairwise~Desert)
+# Separate by Desert because it is so different and we're not wanting to directly compare
+plot( InvDens ~ MH, data= Seedbank[(Seedbank$GermPush==1234)&(Seedbank$Desert=="Mojave")&(Seedbank$Year==2010),])
