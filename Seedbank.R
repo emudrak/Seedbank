@@ -237,7 +237,7 @@ for(FIRETRT in FireTrtmnts){
 
 
 library(lme4)
-
+#----------------
 #Try fitting mixed effects model to Census data (and Seedbank Data?), and for a given trt combo,
 # Come up with LSMEANS, for each ones- This will allow for using more data.
 # Then compare the seedbank value for these means. 
@@ -253,7 +253,7 @@ Seedbank$Year=as.factor(Seedbank$Year)
 Seedbank.glme=glmer( NatDens~Year+MH+Desert+TranDir+ 
                     Year:MH + Year:Desert + Year:TranDir + # MH:Desert + Desert:TranDir+  MH:TranDir +
                         #Year:Desert:TranDir + Year:MH:TranDir + Year:MH:Desert+ MH:Desert:TranDir + 
-                    (1|ShrubID/Plot) , family=poisson, data=Seedbank[Seedbank$GermPush==1234,])
+                    (1|ShrubID) , family=poisson, data=Seedbank[Seedbank$GermPush==1234,])
 
 summary(Seedbank.glme)
 
@@ -268,7 +268,62 @@ invlogit=function(a){exp(a)/(1+exp(a))}
 
 invlogit(means[[1]][,c(4,7,8)])
 
+# #Francoise's idea:  stack dataframes of Seedbank and Census ----------------
+# Shrub|MH|Dir|PlantCt|Type(Census or Seedbank)
+# model count= MH*Dir*Type
+# random shrub(type)
+# get lsmeas for (MH*Dir*Type)
+
+# Prep Data --------------------
+#Use Seedbank and Census (not summarized), subset by Mojave, North, 2010 Seedbank, 2011 Census or 2011 Seedbank and 2011 Census
+# Response: InvDensity or Total Density
+SEEDYEAR=2010    #2010 or 2011
+CENYEAR=2011    #Stick with 2011 
+Sub.Seed=subset(Seedbank, (Desert=="Mojave")&(Year==SEEDYEAR)&(TranDir=="N")&((GermPush=="1234")|(GermPush=="0")),select=c("ShrubID", "MH", "MHcode", "TotDensAll","NatDens", "InvDens", "GermPush" ))
+library(doBy)  #Must combine data from Push 0 (germinated in the field) and from Push1234 (total germinated in greenhouse)
+Sub.Seedbank=summaryBy( TotDensAll + NatDens + InvDens ~ ShrubID + MH + MHcode, data=Sub.Seed, FUN=sum)
+Sub.Seedbank$Type="Seedbank" 
+Sub.Census=subset(Census, (Desert=="Mojave")&(Year==2011)&(TranDir=="N"),select=c("ShrubID", "MH", "MHcode", "TotDens","NatDens", "InvDens"))
+Sub.Census$Type="Census"
+names(Sub.Seedbank)=names(Sub.Census)
+#Stack Census and Seedbank Data
+CombSub=rbind(Sub.Seedbank, Sub.Census)
+CombSub$Type=factor(CombSub$Type)
+
+# Make Models ----------------
+library(lme4)
+TARGET=CombSub$InvDens
+TARGNAME="Invasive Density"
+Seedbank.glme=glmer( TARGET~MH*Type+(1|ShrubID) , family=poisson, data=CombSub)
+summary(Seedbank.glme)
+
+library(lsmeans)
+Seedbank.means=lsmeans(Seedbank.glme,  ~  MH:Type )$`MH:Type lsmeans`
+#back transform becasue of poisson family log-link
+Seedbank.means$exp.lsmean=exp(Seedbank.means$lsmean)
+Seedbank.means$exp.LCL=exp(Seedbank.means$asymp.LCL)
+Seedbank.means$exp.UCL=exp(Seedbank.means$asymp.UCL)
+
+# Plot Figure --------------
+xrange=range(c(Seedbank.means[Seedbank.means$Type=="Seedbank",c("exp.UCL","exp.LCL")]))
+yrange=range(c(Seedbank.means[Seedbank.means$Type=="Census",c("exp.UCL","exp.LCL")]))
+windows(5,5)
+plot(0,0, xlab=paste("Seed Bank Density ", SEEDYEAR), ylab=paste("Census Density ", CENYEAR), xlim=xrange, ylim=yrange, pch=NA)
+points(Seedbank.means[Seedbank.means$Type=="Seedbank","exp.lsmean"],  Seedbank.means[Seedbank.means$Type=="Census","exp.lsmean"], pch=19)
+arrows(Seedbank.means[Seedbank.means$Type=="Seedbank","exp.lsmean"], Seedbank.means[Seedbank.means$Type=="Census","exp.lsmean"],  
+       Seedbank.means[Seedbank.means$Type=="Seedbank","exp.UCL"], Seedbank.means[Seedbank.means$Type=="Census","exp.lsmean"], angle=90, length=0.05)
+arrows(Seedbank.means[Seedbank.means$Type=="Seedbank","exp.lsmean"], Seedbank.means[Seedbank.means$Type=="Census","exp.lsmean"],  
+       Seedbank.means[Seedbank.means$Type=="Seedbank","exp.LCL"], Seedbank.means[Seedbank.means$Type=="Census","exp.lsmean"], angle=90, length=0.05)
+
+arrows(Seedbank.means[Seedbank.means$Type=="Seedbank","exp.lsmean"], Seedbank.means[Seedbank.means$Type=="Census","exp.lsmean"],  
+       Seedbank.means[Seedbank.means$Type=="Seedbank","exp.lsmean"], Seedbank.means[Seedbank.means$Type=="Census","exp.UCL"], angle=90, length=0.05)
+arrows(Seedbank.means[Seedbank.means$Type=="Seedbank","exp.lsmean"], Seedbank.means[Seedbank.means$Type=="Census","exp.lsmean"],  
+       Seedbank.means[Seedbank.means$Type=="Seedbank","exp.lsmean"], Seedbank.means[Seedbank.means$Type=="Census","exp.LCL"], angle=90, length=0.05)
+abline(0,1, lty=2)
+adjvals=c(c(0,0), c(0,1),c(0,1),c(1,0))
+text(locator(4),   #Click four times where you want the labels to go
+     labels=Seedbank.means[Seedbank.means$Type=="Census","MH"],  cex=0.8)
+title(paste("Mojave North "))
 
 
-# Separate by Desert because it is so different and we're not wanting to directly compare
-plot( InvDens ~ MH, data= Seedbank[(Seedbank$GermPush==1234)&(Seedbank$Desert=="Mojave")&(Seedbank$Year==2010),])
+
